@@ -1,0 +1,6 @@
+{
+  "ckpt_dir": "/media/lab/L/llama2repo/codellama/CodeLlama-7b-Instruct/",
+  "tokenizer_path": "/media/lab/L/llama2repo/codellama/CodeLlama-7b-Instruct/tokenizer.model",
+  "max_seq_len": 128,
+  "key": "lolkeylongenough"
+}
