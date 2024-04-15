@@ -15,7 +15,7 @@ Requirements
 How to Use
 ----------
 
-1.  Install the Zip as Plugin of PyCharm and restart the IDE
+1.  Install the build\distributions\GAI4-TDD-0.x.x.zip as Plugin of PyCharm and restart the IDE
 2.  Open settings and set-up the OpenAI API Key like in figure 1
 
 ![Screen1](imgs/screen_1_key.png)
@@ -45,3 +45,16 @@ Fig.4 - GAI4 dialog
 Here is the video on how to install and use the tool:
 
 [Link](https://youtu.be/3oIDb-6NgS4)
+
+DISCLAIMER: images and text could be outdated
+
+-------------
+THINGS TO DO
+-------------
+* Semi-automated refactoring
+* Test coverage checker
+* Improve prompt quality
+* Update README images and text
+* Improve the quality of the project structure
+* Remove deprecated API and update to JDK 17
+-------------
