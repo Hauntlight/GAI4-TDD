@@ -9,9 +9,6 @@ import base64
 import secrets
 import requests
 import json
-
-
-
 import re
 
 

@@ -44,6 +44,7 @@ if __name__ == "__main__":
     parser.add_argument('-tc', '--testclass', type=str, help='Test Class',required=True,nargs='?',const=r'')
     parser.add_argument('-k', '--key', type=str, help='API key for GPT',required=True)
     parser.add_argument('-p','--project',type=str, help='Project dir',required=True,nargs='?',const=r'')
+    parser.add_argument('-m', '--model', type=str,help='Model to use',required=True)
     args = parser.parse_args()
 
     # Esegui i test
@@ -55,6 +56,7 @@ if __name__ == "__main__":
     pathTestClass = args.testclass.replace('"','')
     pathClass = args.clas.replace('"','')
     testResult = run_tests(pathTestClass,args.project.replace('"',''))
+    model = args.model
     if len(testResult.errors) > 0:
         last_error = testResult.errors[-1]
         error_message = last_error[1]

@@ -82,9 +82,9 @@ public class AzioneAssistente extends AbstractAction {
 		String server =  gai4settings.getInstance().getServer();
 		String exKey = gai4settings.getInstance().getServerKey();
 		String model = gai4settings.getInstance().getAssistantModel();
-		if (model.trim().equalsIgnoreCase("gpt")){
+		if (model.trim().contains("gpt")){
 			ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
-				executeGPTScript(parameters);
+				executeGPTScript(parameters + " -m "+model);
 			}, "Running Script", false, parent.getP());
 		}else{
 			ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
