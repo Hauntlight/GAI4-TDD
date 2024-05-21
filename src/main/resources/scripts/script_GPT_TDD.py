@@ -94,7 +94,7 @@ if __name__ == "__main__":
     #print("Request sent")
     #print(
     #    "Complete the hint to pass all tests\n\n\nThe test class to pass is:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "")
-    response = client.chat.completions.create(model="gpt-4",
+    response = client.chat.completions.create(model=model,
     messages=[
         {
             "role": "system",
