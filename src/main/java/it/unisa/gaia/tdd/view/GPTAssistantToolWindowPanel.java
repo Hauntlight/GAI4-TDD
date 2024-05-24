@@ -5,7 +5,10 @@ import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.ui.JBUI.CurrentTheme.ActionButton;
 
+import it.unisa.gaia.tdd.GAIA;
 import it.unisa.gaia.tdd.control.AzioneAssistente;
+import it.unisa.gaia.tdd.control.AzioneVerificaCoverage;
+import it.unisa.gaia.tdd.gai4settings;
 
 import javax.swing.*;
 
@@ -18,6 +21,8 @@ import java.util.List;
 public class GPTAssistantToolWindowPanel extends JPanel {
     JTextField classeDaCompletareTextField;
     private JTextField testClassTextField;
+
+    private JButton buttonCoverage;
     private Project p;
     
     public Project getP() {
@@ -31,6 +36,7 @@ public class GPTAssistantToolWindowPanel extends JPanel {
     public void setP(Project p) {
 		this.p = p;
 	}
+
 
 
 
@@ -60,14 +66,22 @@ public class GPTAssistantToolWindowPanel extends JPanel {
         add(testClassTextField);
         JButton button = new JButton(new AzioneAssistente(this));
         add(button);
+
+        buttonCoverage = new JButton(new AzioneVerificaCoverage(this));
+        add(buttonCoverage);
         
         classeDaCompletareTextField.setBounds (5, 25, 925, 25);
         testClassTextField.setBounds (5, 75, 925, 25);
         lbl.setBounds (5, 0, 500, 25);
         lbl2.setBounds (5, 50, 500, 25);
         button.setBounds (5, 120, 100, 25);
+        buttonCoverage.setBounds (135, 120, 150, 25);
     }
     public void updateContent(String filePath, Project project) {
         this.classeDaCompletareTextField.setText(filePath);
+        String model = gai4settings.getInstance().getAssistantModel();
+        if (model.contains("gpt") && this.buttonCoverage != null){
+            this.buttonCoverage.setEnabled(true);
+        }
     }
 }

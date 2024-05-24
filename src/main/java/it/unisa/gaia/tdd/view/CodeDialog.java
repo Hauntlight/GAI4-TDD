@@ -32,6 +32,26 @@ public class CodeDialog extends DialogWrapper {
     }
 
     @Override
+    protected JComponent createSouthPanel() {
+        JPanel panel = new JPanel(new FlowLayout());
+
+        JButton improveButton = new JButton("Improve");
+        improveButton.addActionListener(e -> onImprove());
+        panel.add(improveButton);
+
+        JButton okButton = new JButton("OK");
+        okButton.addActionListener(e -> close(OK_EXIT_CODE));
+        panel.add(okButton);
+        return panel;
+    }
+
+    private void onImprove() {
+        // Handle improve action
+        close(OK_EXIT_CODE);
+    }
+
+
+    @Override
     protected void createDefaultActions() {
         super.createDefaultActions();
         myOKAction.putValue(Action.NAME, "OK");
