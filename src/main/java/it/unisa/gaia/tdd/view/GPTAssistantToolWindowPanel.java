@@ -7,6 +7,7 @@ import com.intellij.util.ui.JBUI.CurrentTheme.ActionButton;
 
 import it.unisa.gaia.tdd.GAIA;
 import it.unisa.gaia.tdd.control.AzioneAssistente;
+import it.unisa.gaia.tdd.control.AzioneRefactor;
 import it.unisa.gaia.tdd.control.AzioneVerificaCoverage;
 import it.unisa.gaia.tdd.gai4settings;
 
@@ -66,6 +67,8 @@ public class GPTAssistantToolWindowPanel extends JPanel {
         add(testClassTextField);
         JButton button = new JButton(new AzioneAssistente(this));
         add(button);
+        JButton buttonRefactor = new JButton(new AzioneRefactor(this));
+        add(buttonRefactor);
 
         buttonCoverage = new JButton(new AzioneVerificaCoverage(this));
         add(buttonCoverage);
@@ -74,8 +77,9 @@ public class GPTAssistantToolWindowPanel extends JPanel {
         testClassTextField.setBounds (5, 75, 925, 25);
         lbl.setBounds (5, 0, 500, 25);
         lbl2.setBounds (5, 50, 500, 25);
-        button.setBounds (5, 120, 100, 25);
-        buttonCoverage.setBounds (135, 120, 150, 25);
+        button.setBounds (5, 120, 150, 25);
+        buttonCoverage.setBounds (185, 120, 150, 25);
+        buttonRefactor.setBounds(365, 120, 150, 25);
     }
     public void updateContent(String filePath, Project project) {
         this.classeDaCompletareTextField.setText(filePath);

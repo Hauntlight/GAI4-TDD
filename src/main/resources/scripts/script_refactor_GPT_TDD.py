@@ -7,32 +7,6 @@ from openai import OpenAI
 
 import re
 
-
-def run_tests(test_file_path,project):
-    # Aggiungi il percorso del file al sys.path
-    file_directory = os.path.dirname(test_file_path)
-    sys.path.append(file_directory)
-    proj_directory = os.path.dirname(project)
-    sys.path.append(proj_directory)
-
-    # Ottieni il nome del file senza estensione
-    file_name = os.path.splitext(os.path.basename(test_file_path))[0]
-
-    try:
-        # Carica la suite di test dal modulo specificato
-        loader = unittest.TestLoader()
-        suite = loader.loadTestsFromName(file_name)
-
-        # Esegui i test
-        runner = unittest.TextTestRunner(verbosity=0)
-        result = runner.run(suite)
-
-        # Restituisci il risultato
-        return result
-    finally:
-        # Rimuovi il percorso del file da sys.path indipendentemente dall'esito dei test
-        sys.path.remove(proj_directory)
-        sys.path.remove(file_directory)
         
 
 if __name__ == "__main__":
@@ -53,10 +27,11 @@ if __name__ == "__main__":
     testClassText = ""
     classText = ""
     client = OpenAI(api_key=args.key)
-    pathTestClass = args.testclass.replace('"','')
+    #pathTestClass = args.testclass.replace('"','')
     pathClass = args.clas.replace('"','')
-    testResult = run_tests(pathTestClass,args.project.replace('"',''))
+    #testResult = run_tests(pathTestClass,args.project.replace('"',''))
     model = args.model
+    '''
     if len(testResult.errors) > 0:
         last_error = testResult.errors[-1]
         error_message = last_error[1]
@@ -72,22 +47,22 @@ if __name__ == "__main__":
         ultima_riga = lines[-1]
     else:
         ultima_riga = ""
-
+    '''
     #print("MESSAGGIO" + ultima_riga)
 
-    f = open(pathTestClass, "r")
+    #f = open(pathTestClass, "r")
 
-    testClassText = f.read()
+    #testClassText = f.read()
 
-    f.close()
+    #f.close()
 
     f = open(pathClass, "r")
 
     classText = f.read()
 
     f.close()
-    userText = r"Fix the hint based on last test case\n\n\nThe test class:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "\n\n"
-    systemText = r"You will be provided with a piece of Python code, and your task is to find and fix bugs to pass the last test case, writing the bare minimum code.\n\n"
+    #userText = r"Fix the hint based on last test case\n\n\nThe test class:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "\n\n"
+    #systemText = r"You will be provided with a piece of Python code, and your task is to find and fix bugs to pass the last test case, writing the bare minimum code.\n\n"
 
     # print(r'{"messages": [{"role": "system", "content": "'+systemText+'"}, {"role": "user", "content": "'+userText.replace('\n', '\\n').replace('\t','\\t')+'"}, {"role": "assistant", "content": "'+rightClassText.replace('\n', '\\n').replace('\t','\\t')+'"}]}')
 
@@ -98,11 +73,11 @@ if __name__ == "__main__":
     messages=[
         {
             "role": "system",
-            "content": "You will be provided with a piece of Python code, and your task is to find and fix bugs to pass the last test case, return the full class. You can't modify test cases but you will get the error message of last test case. You will write the bare minimum code to pass the test.\n\n"
+            "content": "You will be given Python code and your job is to improve the quality of the code and refactor it. Return the complete code without explanation, but add comments where necessary."
         },
         {
             "role": "user",
-            "content": "Write the bare minimum code to pass the tests.\n\n\nThe test class:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "\n\n" + "The error message is:\n\n" + ultima_riga
+            "content": classText
         }
     ],
     temperature=0.1,

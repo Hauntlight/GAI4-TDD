@@ -71,7 +71,7 @@ public class AzioneAssistente extends AbstractAction {
 	public AzioneAssistente(GPTAssistantToolWindowPanel parent) {
 		super();
 		this.parent = parent;
-		this.putValue(NAME, "RUN");
+		this.putValue(NAME, "Green Phase");
 	}
 
 	@Override

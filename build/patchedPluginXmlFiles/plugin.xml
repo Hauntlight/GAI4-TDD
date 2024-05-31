@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>it.unisa.gaia.tdd</id>
   <name>GAI4-TDD</name>
-  <version>0.2.0</version>
+  <version>0.2.5</version>
   <category>Tool support</category>
   <vendor email="pcassieri@unisa.it" url="https://hauntlight.github.io/">Pietro Cassieri</vendor>
   <description>

@@ -15,7 +15,6 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.WindowManager;
 import it.unisa.gaia.tdd.gai4settings;
-import it.unisa.gaia.tdd.view.CodeDialog;
 import it.unisa.gaia.tdd.view.CodeDiffDialog;
 import it.unisa.gaia.tdd.view.GPTAssistantToolWindowPanel;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-public class AzioneVerificaCoverage extends AbstractAction {
+public class AzioneRefactor extends AbstractAction {
 
 	private GPTAssistantToolWindowPanel parent;
 	private String output = "";
@@ -52,10 +51,10 @@ public class AzioneVerificaCoverage extends AbstractAction {
 		this.output = output;
 	}
 
-	public AzioneVerificaCoverage(GPTAssistantToolWindowPanel parent) {
+	public AzioneRefactor(GPTAssistantToolWindowPanel parent) {
 		super();
 		this.parent = parent;
-		this.putValue(NAME, "Check Coverage");
+		this.putValue(NAME, "Refactor");
 	}
 
 	@Override
@@ -99,8 +98,8 @@ public class AzioneVerificaCoverage extends AbstractAction {
 
 			this.setEnabled(false);
 			String tempDir = System.getProperty("java.io.tmpdir");
-			scriptFile = new File(tempDir, "script_coverage_GPT_TDD.py");
-			Files.copy(getClass().getResourceAsStream("/scripts/script_coverage_GPT_TDD.py"), scriptFile.toPath(),
+			scriptFile = new File(tempDir, "script_refactor_GPT_TDD.py");
+			Files.copy(getClass().getResourceAsStream("/scripts/script_refactor_GPT_TDD.py"), scriptFile.toPath(),
 					StandardCopyOption.REPLACE_EXISTING);
 			Project p = parent.getP();
 			String command = "python " + scriptFile.getAbsolutePath() + " " + parameters + " -p "
@@ -130,10 +129,32 @@ public class AzioneVerificaCoverage extends AbstractAction {
 
 			ApplicationManager.getApplication().invokeLater(()->{
 				//Old View Implementation
-				CodeDialog dialog = new CodeDialog(parent.getP(), "\n" + output);
-	            dialog.show();
+				/*CodeDialog dialog = new CodeDialog(parent.getP(), "\n" + output);
+	            dialog.show();*/
+				//New View
+				
+				String content = "ERROR";
+				try {
+					 content = new String(Files.readAllBytes(Paths.get(parent.getPath())));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 
-	        }, ModalityState.NON_MODAL);
+				CodeDiffDialog dialog = new CodeDiffDialog(parent.getP(),content,output.toString());
+				DocumentContent contentModified = dialog.getContent();
+				
+				dialog.show();
+
+	            if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
+	                String path = this.getParent().getPath();
+	                
+	                sovrascriviFile(parent.getP(), path, contentModified.getDocument().getText());
+	                refreshFile(parent.getP(), path);
+	            } else {
+	                // L'utente ha cliccato su "Cancel" o ha chiuso la finestra modale,
+	                // gestisci di conseguenza
+	            }
+			}, ModalityState.NON_MODAL);
 			// Non è più necessario attendere che il processo termini, poiché è stato //
 			// eseguito in un thread separato
 
