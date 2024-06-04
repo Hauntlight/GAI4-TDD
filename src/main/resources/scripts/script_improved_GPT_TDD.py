@@ -33,7 +33,7 @@ def run_tests(test_file_path,project):
         # Rimuovi il percorso del file da sys.path indipendentemente dall'esito dei test
         sys.path.remove(proj_directory)
         sys.path.remove(file_directory)
-
+        
 
 if __name__ == "__main__":
     # Sostituisci il percorso del file con il percorso assoluto del tuo file di test
@@ -94,7 +94,6 @@ if __name__ == "__main__":
 
     f.close()
 
-
     userText = r"Fix the hint based on last test case\n\n\nThe test class:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "\n\n"
     systemText = r"You will be provided with a piece of Python code, and your task is to find and fix bugs to pass the last test case, writing the bare minimum code.\n\n"
 
@@ -104,63 +103,36 @@ if __name__ == "__main__":
     #print(
     #    "Complete the hint to pass all tests\n\n\nThe test class to pass is:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "")
     response = client.chat.completions.create(model=model,
-                                              messages=[
-                                                  {
-                                                      "role": "system",
-                                                      "content": [
-                                                          {
-                                                              "type": "text",
-                                                              "text": "\nYou will be provided with a test suite class and a class under test in python. Your task is to report IF the test methods test all cases of functions under test. Consider only the methods called in the test suite.\nYour answer should be only:\n\"Test suite OK\"\nor\n\"Test suite NOT OK\"\n"
-                                                          }
-                                                      ]
-                                                  },
-                                                  {
-                                                      "role": "user",
-                                                      "content": "Test suite:\n\n" + testClassText + "\n\n\nClass under Test:\n\n" + classText + "\n\n"
-                                                  },
-                                                  {
-                                                      "role": "assistant",
-                                                      "content": [
-                                                          {
-                                                              "type": "text",
-                                                              "text": "Test suite NOT OK"
-                                                          }
-                                                      ]
-                                                  },
-                                                  {
-                                                      "role": "user",
-                                                      "content": [
-                                                          {
-                                                              "type": "text",
-                                                              "text": "Now answer considering only the methods called in the test suite"
-                                                          }
-                                                      ]
-                                                  }
-                                              ],
-                                              temperature=0.1,
-                                              max_tokens=2500,
-                                              top_p=1,
-                                              frequency_penalty=0,
-                                              presence_penalty=0)
+    messages=[
+        {
+            "role": "system",
+            "content": "You will be provided with a test suite class and a class under test in python. Your task is to remove from the class under test the code that is not tested, but ONLY in methods called in the test suite. Your answer should be only code.\n\nThe procedure you should follow is this one:\nFor each test in test suite check the function of the class under test that is called\nNow check if the tests in the test suite check all the possible cases of the function\nIf not, fix the method under test, to be fully covered by the test cases"
+        },
+        {
+            "role": "user",
+            "content": "The test suite:\n\n" + testClassText + "\n\n\nClass under test:\n\n" + classText + "\n\n"
+        }
+    ],
+    temperature=0.1,
+    max_tokens=2500,
+    top_p=1,
+    frequency_penalty=0,
+    presence_penalty=0)
     #print("Gotcha! Writing time!")
     #print(response)
     code = response.choices[0].message.content
-    #match = re.search(r'```+(python)?([\s\S]*?)```+', code)
-    #if match:
-    #    result = match.group(2)
-    #else:
-    #    result = code
-    #print(result)
-    print(code)
-    #with open(r'C:\Users\Pietro\Desktop\log.log', 'a') as file:
-        # Write your text to be appended
-        #file.write("Coverage check \n")
-        #file.write("content: You will be provided with a test suite class and a class under test in python. Your task is to remove from the class under test the code that is not tested, but ONLY in methods called in the test suite. Your answer should be only code.\n\nThe procedure you should follow is this one:\nFor each test in test suite check the function of the class under test that is called\nNow check if the tests in the test suite check all the possible cases of the function\nIf not, fix the method under test, to be fully covered by the test cases")
-        #file.write("\n role: user \n")
-        #file.write("content: The test suite:\n\n" + testClassText + "\n\n\nClass under test:\n\n" + classText + "\n\n")
-        #file.write("role: assistant \n")
-        #file.write("content : " + code)
-        #file.write("\n\n\n\n")
+    match = re.search(r'```+(python)?([\s\S]*?)```+', code)
+    if match:
+        result = match.group(2)
+    else:
+        result = code
+    print(result)
+
+
+
+
+
+
     #f = open(pathClass, "w")
     #f.write(result)
     #f.close()
