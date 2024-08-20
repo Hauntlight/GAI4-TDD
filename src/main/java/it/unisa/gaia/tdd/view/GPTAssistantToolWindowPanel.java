@@ -72,7 +72,7 @@ public class GPTAssistantToolWindowPanel extends JPanel {
         add(buttonRefactor);
 
         JButton improvedButton = new JButton(new AzioneAssistenteSmart(this));
-        add(improvedButton);
+        //add(improvedButton); TODO
 
         buttonCoverage = new JButton(new AzioneVerificaCoverage(this));
         add(buttonCoverage);
