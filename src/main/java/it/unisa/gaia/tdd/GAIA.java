@@ -23,7 +23,7 @@ public class GAIA implements Configurable {
     private JTextField dataTextFieldEx;
     private JTextField dataTextFieldExKey;
 
-    private String[] comboModelItems = {"gpt-4o","gpt-4", "External"};
+    private String[] comboModelItems = {"gpt-4-turbo","gpt-4o","gpt-4", "External"};
 
     @Override
     public @Nls(capitalization = Nls.Capitalization.Title) String getDisplayName() {
@@ -91,11 +91,13 @@ public class GAIA implements Configurable {
         dataTextFieldEx.setText(getStoredData().server);
         dataTextFieldExKey.setText(getStoredData().serverKey);
         if(getStoredData().assistantModel.equalsIgnoreCase("External")) {
-            comboModel.setSelectedIndex(2);
-        }else if(getStoredData().assistantModel.contains("o")){
+            comboModel.setSelectedIndex(3);
+        }else if(getStoredData().assistantModel.contains("4o")){
+            comboModel.setSelectedIndex(1);
+        }else if (getStoredData().assistantModel.contains("turbo")) {
             comboModel.setSelectedIndex(0);
         }else{
-            comboModel.setSelectedIndex(1);
+            comboModel.setSelectedIndex(2);
         }
     }
 
