@@ -75,7 +75,7 @@ public class GPTAssistantToolWindowPanel extends JPanel {
         //add(improvedButton); TODO
 
         buttonCoverage = new JButton(new AzioneVerificaCoverage(this));
-        add(buttonCoverage);
+        //add(buttonCoverage);
         
         classeDaCompletareTextField.setBounds (5, 25, 925, 25);
         testClassTextField.setBounds (5, 75, 925, 25);

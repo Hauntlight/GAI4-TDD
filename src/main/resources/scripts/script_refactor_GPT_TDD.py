@@ -73,7 +73,7 @@ if __name__ == "__main__":
     messages=[
         {
             "role": "system",
-            "content": "You will be given Python code and your job is to improve the quality of the code and refactor it. Return the complete code without explanation, but add comments where necessary."
+            "content": "You will be given Python code and your job is to improve the quality of the code and refactor it. Return the complete code without explanation, but add comments where necessary. Do not change the code logic"
         },
         {
             "role": "user",
