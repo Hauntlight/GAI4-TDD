@@ -14,7 +14,9 @@ def run_tests(test_file_path,project):
     sys.path.append(file_directory)
     proj_directory = os.path.dirname(project)
     sys.path.append(proj_directory)
-
+    sys.path.append(project)
+    #print(project)
+    #print(sys.path)
     # Ottieni il nome del file senza estensione
     file_name = os.path.splitext(os.path.basename(test_file_path))[0]
 
@@ -33,7 +35,7 @@ def run_tests(test_file_path,project):
         # Rimuovi il percorso del file da sys.path indipendentemente dall'esito dei test
         sys.path.remove(proj_directory)
         sys.path.remove(file_directory)
-        
+
 
 if __name__ == "__main__":
     # Sostituisci il percorso del file con il percorso assoluto del tuo file di test
@@ -95,21 +97,21 @@ if __name__ == "__main__":
     #print(
     #    "Complete the hint to pass all tests\n\n\nThe test class to pass is:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "")
     response = client.chat.completions.create(model=model,
-    messages=[
-        {
-            "role": "system",
-            "content": "You will be provided with a piece of Python code, and your task is to find and fix bugs to pass the last test case, return the full class. You can't modify test cases but you will get the error message of last test case. You will write the bare minimum code to pass the test.\n\n"
-        },
-        {
-            "role": "user",
-            "content": "Write the bare minimum code to pass the tests.\n\n\nThe test class:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "\n\n" + "The error message is:\n\n" + ultima_riga
-        }
-    ],
-    temperature=0.1,
-    max_tokens=2500,
-    top_p=1,
-    frequency_penalty=0,
-    presence_penalty=0)
+                                              messages=[
+                                                  {
+                                                      "role": "system",
+                                                      "content": "You will be provided with a piece of Python code, and your task is to find and fix bugs to pass the last test case, return the full class. You can't modify test cases but you will get the error message of last test case. You will write the bare minimum code to pass the test.\n\n"
+                                                  },
+                                                  {
+                                                      "role": "user",
+                                                      "content": "Write the bare minimum code to pass the tests.\n\n\nThe test class:\n\n" + testClassText + "\n\n\nThe hint is:\n\n" + classText + "\n\n" + "The error message is:\n\n" + ultima_riga
+                                                  }
+                                              ],
+                                              temperature=0.1,
+                                              max_tokens=2500,
+                                              top_p=1,
+                                              frequency_penalty=0,
+                                              presence_penalty=0)
     #print("Gotcha! Writing time!")
     #print(response)
     code = response.choices[0].message.content
