@@ -2,6 +2,7 @@ package it.unisa.gaia.tdd.control;
 
 import javax.swing.*;
 
+import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import com.intellij.diff.contents.DiffContent;
@@ -46,11 +47,14 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.TimeUnit;
 
 public class AzioneAssistente extends AbstractAction {
 
 	private GPTAssistantToolWindowPanel parent;
 	private String output = "";
+
+	private static final Logger LOGGER = Logger.getInstance(AzioneAssistente.class);
 
 	public GPTAssistantToolWindowPanel getParent() {
 		return parent;
@@ -109,8 +113,8 @@ public class AzioneAssistente extends AbstractAction {
 
 	private void executeGPTScript(String parameters) {
 		File scriptFile = null;
+		Process process = null;
 		try {
-
 			this.setEnabled(false);
 			String tempDir = System.getProperty("java.io.tmpdir");
 			scriptFile = new File(tempDir, "script_GPT_TDD.py");
@@ -118,71 +122,83 @@ public class AzioneAssistente extends AbstractAction {
 					StandardCopyOption.REPLACE_EXISTING);
 			Project p = parent.getP();
 			String command = "python " + scriptFile.getAbsolutePath() + " " + parameters + " -p "
-					+'"'+parent.getP().getBasePath() + File.separator+"*"+'"';
-			Process process = Runtime.getRuntime().exec(command);
-			// Leggi l'output dello script Python
-			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			BufferedReader readerError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-			StringBuilder errorOutput = new StringBuilder();
+					+ '"' + parent.getP().getBasePath() + File.separator + "*" + '"';
 
-			
-			StringBuilder output = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				output.append(line).append("\n");
-			}
-			
-			String lineError;
-			while ((lineError = readerError.readLine()) != null) {
-			    errorOutput.append(lineError).append("\n");
-			}
+			// Start the process
+			process = Runtime.getRuntime().exec(command);
 
-			readerError.close();
+			// Set the timeout for the process execution
+			long timeout = 300; // Timeout in seconds
+			boolean completed = process.waitFor(timeout, TimeUnit.SECONDS);
 
-			JFrame mainFrame = WindowManager.getInstance().getFrame(parent.getP());
-			mainFrame.setCursor(Cursor.getDefaultCursor());
+			if (completed) {
+				// Process completed within the timeout
+				//LOGGER.info("START");
+				BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+				BufferedReader readerError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+				StringBuilder errorOutput = new StringBuilder();
+				StringBuilder output = new StringBuilder();
+				String line;
 
-			ApplicationManager.getApplication().invokeLater(()->{
-				//Old View Implementation
-				/*CodeDialog dialog = new CodeDialog(parent.getP(), "\n" + output);
-	            dialog.show();*/
-				//New View
-				
-				String content = "ERROR";
-				try {
-					 content = new String(Files.readAllBytes(Paths.get(parent.getPath())));
-				} catch (IOException e) {
-					e.printStackTrace();
+				while ((line = reader.readLine()) != null) {
+					//LOGGER.info(line);
+					output.append(line).append("\n");
 				}
 
-				CodeDiffDialog dialog = new CodeDiffDialog(parent.getP(),content,output.toString());
-				DocumentContent contentModified = dialog.getContent();
-				
-				dialog.show();
+				String lineError;
+				while ((lineError = readerError.readLine()) != null) {
+					//LOGGER.warn(lineError);
+					errorOutput.append(lineError).append("\n");
 
-	            if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
-	                String path = this.getParent().getPath();
-	                
-	                sovrascriviFile(parent.getP(), path, contentModified.getDocument().getText());
-	                refreshFile(parent.getP(), path);
-	            } else {
-	                // L'utente ha cliccato su "Cancel" o ha chiuso la finestra modale,
-	                // gestisci di conseguenza
-	            }
-			}, ModalityState.NON_MODAL);
-			// Non è più necessario attendere che il processo termini, poiché è stato //
-			// eseguito in un thread separato
+				}
+
+				readerError.close();
+
+				JFrame mainFrame = WindowManager.getInstance().getFrame(parent.getP());
+				mainFrame.setCursor(Cursor.getDefaultCursor());
+
+				ApplicationManager.getApplication().invokeLater(() -> {
+					String content = "ERROR";
+					try {
+						content = new String(Files.readAllBytes(Paths.get(parent.getPath())));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
+					CodeDiffDialog dialog = new CodeDiffDialog(parent.getP(), content, output.toString());
+					DocumentContent contentModified = dialog.getContent();
+
+					dialog.show();
+
+					if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
+						String path = this.getParent().getPath();
+						sovrascriviFile(parent.getP(), path, contentModified.getDocument().getText());
+						refreshFile(parent.getP(), path);
+					}
+				}, ModalityState.NON_MODAL);
+
+			} else {
+				// Timeout expired - kill the process
+				process.destroyForcibly();
+				Messages.showErrorDialog("Python script execution timed out.", "Execution Timeout");
+			}
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
-			Messages.showErrorDialog("Error during the execution of Python script", "Error during the execution");
+			ApplicationManager.getApplication().invokeLater(() -> {Messages.showErrorDialog("Error during the execution of Python script", "Error during the execution");
+			}, ModalityState.NON_MODAL);
+
 		} finally {
+			if (process != null && process.isAlive()) {
+				process.destroy();
+			}
 			if (scriptFile.exists()) {
 				scriptFile.delete();
 			}
 			this.setEnabled(true);
 		}
 	}
+
 
 
 	private void executeExternalScript(String parameters) {

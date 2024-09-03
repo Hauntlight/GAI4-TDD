@@ -4,6 +4,10 @@ import sys
 import argparse
 from openai import OpenAI
 
+original_recursion_limit = sys.getrecursionlimit()
+
+# Set a new recursion limit
+sys.setrecursionlimit(30)
 
 import re
 
@@ -31,10 +35,16 @@ def run_tests(test_file_path,project):
 
         # Restituisci il risultato
         return result
+    except RecursionError as e:
+        #print("RecursionError: ", e)
+        return None
     finally:
         # Rimuovi il percorso del file da sys.path indipendentemente dall'esito dei test
         sys.path.remove(proj_directory)
         sys.path.remove(file_directory)
+        sys.path.remove(project)
+        sys.setrecursionlimit(original_recursion_limit)
+
 
 
 if __name__ == "__main__":
@@ -59,7 +69,8 @@ if __name__ == "__main__":
     pathClass = args.clas.replace('"','')
     testResult = run_tests(pathTestClass,args.project.replace('"',''))
     model = args.model
-    if len(testResult.errors) > 0:
+
+    if testResult is not None and len(testResult.errors) > 0:
         last_error = testResult.errors[-1]
         error_message = last_error[1]
         lines = error_message.splitlines()
@@ -67,7 +78,7 @@ if __name__ == "__main__":
 
         #print("Ultimo messaggio di errore:", ultima_riga)
 
-    elif len(testResult.failures) > 0:
+    elif testResult is not None and len(testResult.failures) > 0:
         last_fail = testResult.failures[-1]
         error_message = last_fail[1]
         lines = error_message.splitlines()
