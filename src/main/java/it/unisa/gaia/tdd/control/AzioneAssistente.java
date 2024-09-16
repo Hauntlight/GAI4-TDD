@@ -114,14 +114,35 @@ public class AzioneAssistente extends AbstractAction {
 	private void executeGPTScript(String parameters) {
 		File scriptFile = null;
 		Process process = null;
+		String errorOutputManager = null;
 		try {
+
+			String pythonCommand = "python";
+			int returnCode = 0;
+			try {
+				Process testPython = Runtime.getRuntime().exec(pythonCommand + " --version");
+				// Check if the python command is available
+				returnCode = testPython.waitFor();
+			}catch(IOException ioex){
+				returnCode = 2;
+			}
+			// If returnCode is non-zero, it means "python" is not available, try "python3"
+			if (returnCode != 0) {
+				pythonCommand = "python3";
+				Process testPython3 = Runtime.getRuntime().exec(pythonCommand + " --version");
+				if (testPython3.waitFor() != 0) {
+					throw new IOException("Neither python nor python3 is available.");
+				}
+			}
+
+
 			this.setEnabled(false);
 			String tempDir = System.getProperty("java.io.tmpdir");
 			scriptFile = new File(tempDir, "script_GPT_TDD.py");
 			Files.copy(getClass().getResourceAsStream("/scripts/script_GPT_TDD.py"), scriptFile.toPath(),
 					StandardCopyOption.REPLACE_EXISTING);
 			Project p = parent.getP();
-			String command = "python " + scriptFile.getAbsolutePath() + " " + parameters + " -p "
+			String command = pythonCommand+ " " + scriptFile.getAbsolutePath() + " " + parameters + " -p "
 					+ '"' + parent.getP().getBasePath() + File.separator + "*" + '"';
 
 			// Start the process
@@ -151,8 +172,8 @@ public class AzioneAssistente extends AbstractAction {
 					errorOutput.append(lineError).append("\n");
 
 				}
-
 				readerError.close();
+				errorOutputManager = errorOutput.toString();
 
 				JFrame mainFrame = WindowManager.getInstance().getFrame(parent.getP());
 				mainFrame.setCursor(Cursor.getDefaultCursor());
@@ -188,7 +209,9 @@ public class AzioneAssistente extends AbstractAction {
 			ApplicationManager.getApplication().invokeLater(() -> {Messages.showErrorDialog("Error during the execution of Python script", "Error during the execution");
 			}, ModalityState.NON_MODAL);
 
+
 		} finally {
+
 			if (process != null && process.isAlive()) {
 				process.destroy();
 			}
@@ -196,6 +219,10 @@ public class AzioneAssistente extends AbstractAction {
 				scriptFile.delete();
 			}
 			this.setEnabled(true);
+			if (errorOutputManager != null) {
+				Exception exp = new Exception(errorOutputManager);
+				exp.printStackTrace();
+			}
 		}
 	}
 
