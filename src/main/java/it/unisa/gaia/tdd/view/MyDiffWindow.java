@@ -47,7 +47,7 @@ public class MyDiffWindow extends DiffWindowBase {
             getWrapper().setTitle(title);
         }
 
-        @Override
+        //@Override
         protected void onAfterNavigate() {
             DiffUtil.closeWindow(getWrapper().getWindow(), true, true);
         }

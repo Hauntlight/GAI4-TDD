@@ -1,6 +1,7 @@
 plugins {
     id("java")
-    id("org.jetbrains.intellij") version "1.17.2"
+    // This version requires Gradle 8.13+
+    id("org.jetbrains.intellij.platform") version "2.10.4"
 }
 
 group = "it.unisa.gaia.tdd"
@@ -8,34 +9,44 @@ version = "0.3.3"
 
 repositories {
     mavenCentral()
+    // Adds the necessary JetBrains repositories for PyCharm and Plugins
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 dependencies {
-    // Http Client for API calls
+    intellijPlatform {
+        // 1. Use the 'pycharm' helper.
+        // In Plugin 2.x, this correctly resolves PyCharm Professional.
+        // (PyCharm Community is no longer a build target, Pro contains all features)
+        pycharm("2025.2.4")
+
+        // 2. Use 'bundledPlugin' with ID "Pythonid".
+        // Because we are targeting PyCharm Pro, the Python plugin is Bundled.
+        bundledPlugin("Pythonid")
+
+        // 3. Recommended: Add instrumentation tools
+        instrumentationTools()
+    }
+
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    // JSON processing
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.0")
 }
 
-// Configure Gradle IntelliJ Plugin
-intellij {
-    // Target PyCharm Community 2023.2.5
-    version.set("2023.2.5")
-    type.set("PC")
-
-    // NOTE: We do NOT add "com.intellij.modules.python" here for PyCharm (PC)
-    // because it is already built-in.
+intellijPlatform {
+    pluginConfiguration {
+        version.set(project.version.toString())
+        ideaVersion {
+            sinceBuild.set("232")
+            untilBuild.set(provider { null })
+        }
+    }
 }
 
 tasks {
     withType<JavaCompile> {
         sourceCompatibility = "17"
         targetCompatibility = "17"
-    }
-
-    patchPluginXml {
-        sinceBuild.set("232")
-        // Setting this to null removes the upper limit (<idea-version until-build="...">)
-        untilBuild.set(null as String?)
     }
 }
