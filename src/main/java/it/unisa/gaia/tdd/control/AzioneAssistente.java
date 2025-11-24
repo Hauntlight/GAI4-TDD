@@ -1,348 +1,126 @@
 package it.unisa.gaia.tdd.control;
 
-import javax.swing.*;
-
-import com.intellij.openapi.diagnostic.Logger;
-import org.jetbrains.annotations.NotNull;
-
-import com.intellij.diff.contents.DiffContent;
-import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.diff.contents.DocumentContent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.command.WriteCommandAction;
-import com.intellij.diff.contents.DocumentContent;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.DialogBuilder;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.ui.popup.JBPopup;
-import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.openapi.ui.popup.PopupChooserBuilder;
-import com.intellij.openapi.ui.popup.util.PopupUtil;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.wm.WindowManager;
-
 import it.unisa.gaia.tdd.gai4settings;
-import it.unisa.gaia.tdd.view.CodeDialog;
+import it.unisa.gaia.tdd.model.llm.*;
+import it.unisa.gaia.tdd.model.test.TestRunnerService;
 import it.unisa.gaia.tdd.view.CodeDiffDialog;
 import it.unisa.gaia.tdd.view.GPTAssistantToolWindowPanel;
+import org.jetbrains.annotations.NotNull;
 
-import java.awt.BorderLayout;
-import java.awt.Cursor;
-import java.awt.Window;
+import javax.swing.*;
 import java.awt.event.ActionEvent;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.concurrent.TimeUnit;
 
 public class AzioneAssistente extends AbstractAction {
+    private static final Logger LOGGER = Logger.getInstance(AzioneAssistente.class);
+    private final GPTAssistantToolWindowPanel parent;
 
-	private GPTAssistantToolWindowPanel parent;
-	private String output = "";
+    public AzioneAssistente(GPTAssistantToolWindowPanel parent) {
+        super("Green Phase");
+        this.parent = parent;
+    }
 
-	private static final Logger LOGGER = Logger.getInstance(AzioneAssistente.class);
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Project project = parent.getP();
+        String classPath = parent.getPath();
+        String testPath = parent.getTestPath();
 
-	public GPTAssistantToolWindowPanel getParent() {
-		return parent;
-	}
+        if (classPath.isEmpty() || testPath.isEmpty()) {
+            Messages.showErrorDialog("Please select both class and test files.", "Missing Files");
+            return;
+        }
 
-	public void setParent(GPTAssistantToolWindowPanel parent) {
-		this.parent = parent;
-	}
+        ProgressManager.getInstance().run(new Task.Modal(project, "Running GAI4-TDD Cycle", true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    indicator.setText("Running initial tests...");
+                    TestRunnerService.TestResult testRes = TestRunnerService.runTests(project, testPath);
 
-	public String getOutput() {
-		return output;
-	}
+                    // If tests already pass, no need to fix
+                    if (testRes.success) {
+                        ApplicationManager.getApplication().invokeLater(() ->
+                                Messages.showInfoMessage("Tests are already passing!", "Success"), ModalityState.NON_MODAL);
+                        return;
+                    }
 
-	public void setOutput(String output) {
-		this.output = output;
-	}
+                    indicator.setText("Asking AI for solution...");
+                    String classContent = new String(Files.readAllBytes(Paths.get(classPath)));
+                    String testContent = new String(Files.readAllBytes(Paths.get(testPath)));
 
-	public AzioneAssistente(GPTAssistantToolWindowPanel parent) {
-		super();
-		this.parent = parent;
-		this.putValue(NAME, "Green Phase");
-	}
+                    LLMClient client = createClient();
+                    String newCode = client.ask(classContent, testContent, testRes.errorMessage);
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		String key = gai4settings.getInstance().getApiKey();
-		String parameters = "-k " + key + " " + parent.getParameters();
-		//String externalParameters = parent.getExternalParameters();
-		String server =  gai4settings.getInstance().getServer();
-		String exKey = gai4settings.getInstance().getServerKey();
-		String model = gai4settings.getInstance().getAssistantModel();
-		if (model.trim().contains("gpt")){
-			ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
-				executeGPTScript(parameters + " -m "+model);
-			}, "Running Script", false, parent.getP());
-		}else{
-			ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
-				String externalP = "-s "+server +" -k " + exKey + " " + parent.getParameters();
-				executeExternalScript(externalP);
-			}, "Running Script", false, parent.getP());
-		}
-	}
+                    indicator.setText("Preparing diff view...");
 
-	public DialogBuilder showBlockingPopup(@NotNull Project project) {
-		DialogBuilder builder = new DialogBuilder(project);
-		builder.setTitle("Wait");
-		builder.setCenterPanel(new JLabel("Work in progress"));
-		builder.setOkOperation(() -> {
-		});
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        showDiffDialog(project, classPath, classContent, newCode);
+                    }, ModalityState.NON_MODAL);
 
-		builder.setCancelOperation(() -> {
-		});
-		builder.show();
-		return builder;
-	}
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    ApplicationManager.getApplication().invokeLater(() ->
+                            Messages.showErrorDialog("Error: " + ex.getMessage(), "Execution Failed"), ModalityState.NON_MODAL);
+                }
+            }
+        });
+    }
 
-	private void executeGPTScript(String parameters) {
-		File scriptFile = null;
-		Process process = null;
-		String errorOutputManager = null;
-		try {
+    protected LLMClient createClient() {
+        gai4settings settings = gai4settings.getInstance();
+        String model = settings.getAssistantModel().toLowerCase();
+        String apiKey = settings.getApiKey();
 
-			String pythonCommand = "python";
-			int returnCode = 0;
-			try {
-				Process testPython = Runtime.getRuntime().exec(pythonCommand + " --version");
-				// Check if the python command is available
-				returnCode = testPython.waitFor();
-			}catch(IOException ioex){
-				returnCode = 2;
-			}
-			// If returnCode is non-zero, it means "python" is not available, try "python3"
-			if (returnCode != 0) {
-				pythonCommand = "python3";
-				Process testPython3 = Runtime.getRuntime().exec(pythonCommand + " --version");
-				if (testPython3.waitFor() != 0) {
-					throw new IOException("Neither python nor python3 is available.");
-				}
-			}
+        if (model.contains("codex")) {
+            return new OpenAIGPT51CodexClient(apiKey, settings.getAssistantModel());
+        } else if (model.contains("gpt-5")) {
+            return new OpenAIGPT5Client(apiKey, settings.getAssistantModel());
+        } else if (model.contains("gpt")) {
+            return new OpenAIClient(apiKey, settings.getAssistantModel());
+        } else {
+            return new ExternalClient(settings.getServer(), settings.getServerKey());
+        }
+    }
 
+    private void showDiffDialog(Project project, String path, String oldContent, String newContent) {
+        CodeDiffDialog dialog = new CodeDiffDialog(project, oldContent, newContent);
+        dialog.show();
 
-			this.setEnabled(false);
-			String tempDir = System.getProperty("java.io.tmpdir");
-			scriptFile = new File(tempDir, "script_GPT_TDD.py");
-			Files.copy(getClass().getResourceAsStream("/scripts/script_GPT_TDD.py"), scriptFile.toPath(),
-					StandardCopyOption.REPLACE_EXISTING);
-			Project p = parent.getP();
-			String command = pythonCommand+ " " + scriptFile.getAbsolutePath() + " " + parameters + " -p "
-					+ '"' + parent.getP().getBasePath() + File.separator + "*" + '"';
+        if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
+            DocumentContent modifiedContent = dialog.getContent();
+            String finalCode = modifiedContent.getDocument().getText();
 
-			// Start the process
-			process = Runtime.getRuntime().exec(command);
-
-			// Set the timeout for the process execution
-			long timeout = 300; // Timeout in seconds
-			boolean completed = process.waitFor(timeout, TimeUnit.SECONDS);
-
-			if (completed) {
-				// Process completed within the timeout
-				//LOGGER.info("START");
-				BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-				BufferedReader readerError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-				StringBuilder errorOutput = new StringBuilder();
-				StringBuilder output = new StringBuilder();
-				String line;
-
-				while ((line = reader.readLine()) != null) {
-					//LOGGER.info(line);
-					output.append(line).append("\n");
-				}
-
-				String lineError;
-				while ((lineError = readerError.readLine()) != null) {
-					//LOGGER.warn(lineError);
-					errorOutput.append(lineError).append("\n");
-
-				}
-				readerError.close();
-				errorOutputManager = errorOutput.toString();
-
-				JFrame mainFrame = WindowManager.getInstance().getFrame(parent.getP());
-				mainFrame.setCursor(Cursor.getDefaultCursor());
-
-				ApplicationManager.getApplication().invokeLater(() -> {
-					String content = "ERROR";
-					try {
-						content = new String(Files.readAllBytes(Paths.get(parent.getPath())));
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-
-					CodeDiffDialog dialog = new CodeDiffDialog(parent.getP(), content, output.toString());
-					DocumentContent contentModified = dialog.getContent();
-
-					dialog.show();
-
-					if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
-						String path = this.getParent().getPath();
-						sovrascriviFile(parent.getP(), path, contentModified.getDocument().getText());
-						refreshFile(parent.getP(), path);
-					}
-				}, ModalityState.NON_MODAL);
-
-			} else {
-				// Timeout expired - kill the process
-				process.destroyForcibly();
-				Messages.showErrorDialog("Python script execution timed out.", "Execution Timeout");
-			}
-
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			ApplicationManager.getApplication().invokeLater(() -> {Messages.showErrorDialog("Error during the execution of Python script", "Error during the execution");
-			}, ModalityState.NON_MODAL);
-
-
-		} finally {
-
-			if (process != null && process.isAlive()) {
-				process.destroy();
-			}
-			if (scriptFile.exists()) {
-				scriptFile.delete();
-			}
-			this.setEnabled(true);
-			if (errorOutputManager != null) {
-				Exception exp = new Exception(errorOutputManager);
-				exp.printStackTrace();
-			}
-		}
-	}
-
-
-
-	private void executeExternalScript(String parameters) {
-		File scriptFile = null;
-		try {
-
-			this.setEnabled(false);
-			String tempDir = System.getProperty("java.io.tmpdir");
-			scriptFile = new File(tempDir, "script_External_TDD.py");
-			Files.copy(getClass().getResourceAsStream("/scripts/script_External_TDD.py"), scriptFile.toPath(),
-					StandardCopyOption.REPLACE_EXISTING);
-			Project p = parent.getP();
-			String command = "python " + scriptFile.getAbsolutePath() + " " + parameters + " -p "
-					+'"'+parent.getP().getBasePath() + File.separator+"*"+'"';
-			Process process = Runtime.getRuntime().exec(command);
-			// Leggi l'output dello script Python
-			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			BufferedReader readerError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-			StringBuilder errorOutput = new StringBuilder();
-
-
-			StringBuilder output = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				output.append(line).append("\n");
-			}
-
-			String lineError;
-			while ((lineError = readerError.readLine()) != null) {
-				errorOutput.append(lineError).append("\n");
-			}
-
-			readerError.close();
-
-			JFrame mainFrame = WindowManager.getInstance().getFrame(parent.getP());
-			mainFrame.setCursor(Cursor.getDefaultCursor());
-
-			ApplicationManager.getApplication().invokeLater(()->{
-				//Old View Implementation
-				/*CodeDialog dialog = new CodeDialog(parent.getP(), "\n" + output);
-	            dialog.show();*/
-				//New View
-
-				String content = "ERROR";
-				try {
-					content = new String(Files.readAllBytes(Paths.get(parent.getPath())));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-
-				CodeDiffDialog dialog = new CodeDiffDialog(parent.getP(),content,output.toString());
-				DocumentContent contentModified = dialog.getContent();
-
-				dialog.show();
-
-				if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
-					String path = this.getParent().getPath();
-
-					sovrascriviFile(parent.getP(), path, contentModified.getDocument().getText());
-					refreshFile(parent.getP(), path);
-				} else {
-					// L'utente ha cliccato su "Cancel" o ha chiuso la finestra modale,
-					// gestisci di conseguenza
-				}
-			}, ModalityState.NON_MODAL);
-			// Non è più necessario attendere che il processo termini, poiché è stato //
-			// eseguito in un thread separato
-
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			Messages.showErrorDialog("Error during the execution of Python script", "Error during the execution");
-		} finally {
-			if (scriptFile.exists()) {
-				scriptFile.delete();
-			}
-			this.setEnabled(true);
-		}
-	}
-
-	public static void refreshFile(Project project, String absolutePath) {
-		// Assicurati che il progetto e il percorso assoluto non siano nulli
-		if (project == null || absolutePath == null) {
-			return;
-		}
-
-		// Ottieni il sistema di file locale
-		LocalFileSystem localFileSystem = LocalFileSystem.getInstance();
-
-		// Trova il VirtualFile associato al percorso assoluto
-		VirtualFile virtualFile = localFileSystem.findFileByPath(absolutePath);
-
-		// Se il VirtualFile esiste, esegui il refresh
-		if (virtualFile != null) {
-			WriteCommandAction.runWriteCommandAction(project, () -> {
-				virtualFile.refresh(false, true);
-			});
-		}
-	}
-
-	private static void sovrascriviFile(Project p, String percorsoFile, String nuovoContenuto) {
-		try {
-			LocalFileSystem localFileSystem = LocalFileSystem.getInstance();
-			VirtualFile file = localFileSystem.findFileByPath(percorsoFile);
-
-			WriteCommandAction.runWriteCommandAction(p, () -> {
-				try {
-					// Ottieni il documento del file e modificalo in modo sicuro per la scrittura
-					Document document = FileDocumentManager.getInstance().getDocument(file);
-					if (document != null) {
-						document.setText(nuovoContenuto);
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			});
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+            WriteCommandAction.runWriteCommandAction(project, () -> {
+                try {
+                    VirtualFile file = LocalFileSystem.getInstance().findFileByPath(path);
+                    if (file != null) {
+                        Document doc = FileDocumentManager.getInstance().getDocument(file);
+                        if (doc != null) doc.setText(finalCode);
+                        file.refresh(false, true);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error(e);
+                }
+            });
+        }
+    }
 }

@@ -5,57 +5,51 @@ import com.intellij.diff.chains.DiffRequestChain;
 import com.intellij.diff.impl.CacheDiffRequestChainProcessor;
 import com.intellij.diff.impl.DiffRequestProcessor;
 import com.intellij.diff.impl.DiffWindowBase;
-import com.intellij.diff.util.DiffUserDataKeys;
 import com.intellij.diff.util.DiffUtil;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.WindowWrapperBuilder;
-import com.intellij.openapi.util.Disposer;
-import com.thaiopensource.relaxng.edit.Component;
-
-import javax.swing.JComponent;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.*;
+
 public class MyDiffWindow extends DiffWindowBase {
-	@NotNull
-	private final DiffRequestChain myRequestChain;
+    @NotNull
+    private final DiffRequestChain myRequestChain;
 
-	public MyDiffWindow(@Nullable Project project, @NotNull DiffRequestChain requestChain,
-			@NotNull DiffDialogHints hints) {
-		super(project, hints);
-		myRequestChain = requestChain;
-	}
+    public MyDiffWindow(@Nullable Project project, @NotNull DiffRequestChain requestChain,
+                        @NotNull DiffDialogHints hints) {
+        super(project, hints);
+        myRequestChain = requestChain;
+    }
 
-	public JComponent getPanel() {
-		this.init();
-		return this.getWrapper().getComponent();
-	}
-	
-	public void update() {
-		this.getProcessor().updateRequest();
-	}
-	
+    public JComponent getPanel() {
+        this.init();
+        return this.getWrapper().getComponent();
+    }
 
-	@NotNull
-	@Override
-	protected DiffRequestProcessor createProcessor() {
-		return new MyCacheDiffRequestChainProcessor(myProject, myRequestChain);
-	}
+    public void update() {
+        this.getProcessor().updateRequest();
+    }
 
-	private class MyCacheDiffRequestChainProcessor extends CacheDiffRequestChainProcessor {
-		MyCacheDiffRequestChainProcessor(@Nullable Project project, @NotNull DiffRequestChain requestChain) {
-			super(project, requestChain);
-		}
+    @NotNull
+    @Override
+    protected DiffRequestProcessor createProcessor() {
+        return new MyCacheDiffRequestChainProcessor(myProject, myRequestChain);
+    }
 
-		@Override
-		protected void setWindowTitle(@NotNull String title) {
-			getWrapper().setTitle(title);
-		}
+    private class MyCacheDiffRequestChainProcessor extends CacheDiffRequestChainProcessor {
+        MyCacheDiffRequestChainProcessor(@Nullable Project project, @NotNull DiffRequestChain requestChain) {
+            super(project, requestChain);
+        }
 
-		@Override
-		protected void onAfterNavigate() {
-			DiffUtil.closeWindow(getWrapper().getWindow(), true, true);
-		}
-	}
+        @Override
+        protected void setWindowTitle(@NotNull String title) {
+            getWrapper().setTitle(title);
+        }
+
+        //@Override
+        protected void onAfterNavigate() {
+            DiffUtil.closeWindow(getWrapper().getWindow(), true, true);
+        }
+    }
 }

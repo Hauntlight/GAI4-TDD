@@ -1,48 +1,30 @@
 package it.unisa.gaia.tdd.control;
 
-import java.io.File;
-
-import javax.swing.JComponent;
-
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowFactory;
-import com.intellij.openapi.wm.ToolWindowManager;
-
+import com.intellij.openapi.vfs.VirtualFile;
 import it.unisa.gaia.tdd.view.GPTAssistantToolWindowFactory;
 import it.unisa.gaia.tdd.view.GPTAssistantToolWindowPanel;
 
-
-//Questa Azione Genera viene eseguita quando l'utente utilizza GAI4
+import java.io.File;
 
 public class GPTAssistantAction extends AnAction {
-	@Override
-	public void actionPerformed(AnActionEvent e) {
-		// Ottieni il percorso assoluto del file selezionato
-		// TODO try catch
-		String filePath;
-		try {
-			filePath = e.getDataContext().getData("virtualFile").toString();
-		} catch (Exception ex) {
-			Messages.showMessageDialog("Choose a file", "ERROR!!",
-					Messages.getInformationIcon());
-			return;
-		}
-		 // Rimuovi "file://"
-        String cleanedUrl = filePath.replace("file://", "");
+    @Override
+    public void actionPerformed(AnActionEvent e) {
+        VirtualFile vFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
+        Project project = e.getProject();
 
-        // Sostituisci tutti i "/" con "\"
-        String finalPath = cleanedUrl.replace("/", File.separator);
+        if (vFile == null || project == null) {
+            Messages.showMessageDialog("Choose a file", "Error", Messages.getErrorIcon());
+            return;
+        }
 
-		showToolWindow(finalPath, e.getProject());
-	}
+        String path = vFile.getPath().replace("/", File.separator);
 
-	private void showToolWindow(String filePath, Project project) {
-		GPTAssistantToolWindowPanel toolWindowPanel = new GPTAssistantToolWindowPanel(filePath, project);
-		GPTAssistantToolWindowFactory.showToolWindow(project, toolWindowPanel);
-
-	}
+        GPTAssistantToolWindowPanel panel = new GPTAssistantToolWindowPanel(path, project);
+        GPTAssistantToolWindowFactory.showToolWindow(project, panel);
+    }
 }
