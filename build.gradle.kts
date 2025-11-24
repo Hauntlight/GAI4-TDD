@@ -35,6 +35,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("232")
-        untilBuild.set("242.*")
+        // Setting this to null removes the upper limit (<idea-version until-build="...">)
+        untilBuild.set(null as String?)
     }
 }
