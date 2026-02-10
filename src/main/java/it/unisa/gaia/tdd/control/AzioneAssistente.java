@@ -96,7 +96,9 @@ public class AzioneAssistente extends AbstractAction {
             return new OpenAIGPT5Client(apiKey, settings.getAssistantModel());
         } else if (model.contains("gpt")) {
             return new OpenAIClient(apiKey, settings.getAssistantModel());
-        } else {
+        } else if (model.contains("claude")) {
+            return new ClaudeClient(apiKey,settings.getAssistantModel());
+        }else{
             return new ExternalClient(settings.getServer(), settings.getServerKey());
         }
     }

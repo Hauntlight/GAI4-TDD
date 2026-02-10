@@ -16,7 +16,7 @@ public class GAIA implements Configurable {
     private JTextField dataTextFieldExKey;
 
     // Added gpt-5.1-codex to the top
-    private final String[] comboModelItems = {"gpt-5.1-codex", "gpt-5", "gpt-5.1", "gpt-4-turbo", "gpt-4o", "gpt-4", "External"};
+    private final String[] comboModelItems = {"gpt-5.1-codex", "gpt-5", "gpt-5.1", "gpt-4-turbo", "gpt-4o", "gpt-4", "claude-opus-4-6","External"};
 
     @Override
     public @Nls(capitalization = Nls.Capitalization.Title) String getDisplayName() {
