@@ -5,7 +5,7 @@
     <vendor email="pcassieri@unisa.it" url="https://hauntlight.github.io/">Pietro Cassieri</vendor>
 
     <description><![CDATA[
-      Plugin to use GPT to code TDD pipeline. Refactored for modern IntelliJ versions.
+      Plugin to use LLMs to code TDD pipeline. Refactored for modern IntelliJ versions.\
     ]]></description>
 
     <!-- Dependencies -->
