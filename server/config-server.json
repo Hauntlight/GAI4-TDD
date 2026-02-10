@@ -1,6 +1,7 @@
 {
-  "ckpt_dir": "/media/lab/L/llama2repo/codellama/CodeLlama-7b-Instruct/",
-  "tokenizer_path": "/media/lab/L/llama2repo/codellama/CodeLlama-7b-Instruct/tokenizer.model",
-  "max_seq_len": 128,
+  "repo_id": "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
+  "filename": "Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
+  "n_ctx": 16384,
+  "hf_home": "/media/lab/L/models",
   "key": "lolkeylongenough"
 }

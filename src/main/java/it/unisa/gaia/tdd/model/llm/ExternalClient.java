@@ -32,20 +32,28 @@ public class ExternalClient implements LLMClient {
 
     @Override
     public String ask(String code, String testCode, String errorMessage) throws IOException {
-        String prompt = "Test Class:\n" + testCode + "\n\nCode:\n" + code + "\n\nError:\n" + errorMessage;
-        return sendEncryptedRequest(prompt);
+        String systemPrompt = "You will be provided with a piece of Python code, and your task is to find and fix bugs to pass the last test case, return the full class. You can't modify test cases but you will get the error message of last test case. You will write the bare minimum code to pass the test.\n\n";
+        String userPrompt = "Write the bare minimum code to pass the tests.\n\n\nThe test class:\n\n" + testCode + "\n\n\nThe hint is:\n\n" + code + "\n\n" + "The error message is:\n\n"+ errorMessage;
+        return sendEncryptedRequest(systemPrompt, userPrompt);
     }
 
     // Implemented missing method
     @Override
     public String refactor(String code, String testCode) throws IOException {
-        String prompt = "Refactor this Code:\n" + code;
-        return sendEncryptedRequest(prompt);
+        String systemPrompt = "You will be provided with a piece of Python code, and your task is to TBD\n\n";
+        String userPrompt = "Refactor this Code:\n" + code;
+        return sendEncryptedRequest(systemPrompt, userPrompt);
     }
 
-    private String sendEncryptedRequest(String text) throws IOException {
+    private String sendEncryptedRequest(String system, String user) throws IOException {
         try {
-            String encrypted = encrypt(text, serverKey);
+            // Create a JSON object for the prompts
+            ObjectNode prompts = mapper.createObjectNode();
+            prompts.put("system", system);
+            prompts.put("user", user);
+            String jsonString = mapper.writeValueAsString(prompts);
+
+            String encrypted = encrypt(jsonString, serverKey);
             ObjectNode jsonBody = mapper.createObjectNode();
             jsonBody.put("base64", encrypted);
 
